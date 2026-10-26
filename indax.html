@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mario Math: ร้อยละและเปอร์เซ็นต์ ป.5</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for retro Mario style & Thai accessibility -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #5c94fc;
+            color: #111;
+            overflow-x: hidden;
+        }
+        .font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+        
+        /* Mario Style Shadows & Borders */
+        .mario-box {
+            background-color: #f8d870;
+            border: 4px solid #000;
+            box-shadow: 4px 4px 0 #000;
+        }
+        .mario-btn {
+            border: 3px solid #000;
+            box-shadow: 3px 3px 0 #000;
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+        .mario-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+        .mario-card {
+            background: #fff;
+            border: 4px solid #000;
+            border-radius: 12px;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+        }
+        .pipe-green {
+            background: linear-gradient(90deg, #00a800 0%, #00f800 30%, #00a800 70%, #005000 100%);
+            border: 3px solid #000;
+        }
+        .pipe-top {
+            background: linear-gradient(90deg, #00a800 0%, #00f800 30%, #00a800 70%, #005000 100%);
+            border: 3px solid #000;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+
+        /* Responsive Grid Cell */
+        .grid-cell {
+            aspect-ratio: 1;
+            border: 1px solid #ddd;
+            transition: background-color 0.15s;
+        }
+        .grid-cell.selected {
+            background-color: #e52521; /* Mario Red */
+            border-color: #900;
+        }
+
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 2s infinite ease-in-out;
+        }
+        
+        /* Coin Spin */
+        @keyframes coinBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(10deg); }
+        }
+        .coin-icon {
+            animation: coinBounce 1s infinite;
+        }
+
+        /* Prevent scrolling bounce on iOS */
+        html, body {
+            position: fixed;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        #app-wrapper {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen">
+
+    <div id="app-wrapper" class="flex flex-col min-h-full">
+        <!-- HEADER NAVBAR -->
+        <header class="bg-red-600 text-white border-b-4 border-black px-4 py-3 flex justify-between items-center z-10 sticky top-0">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl animate-float">🍄</span>
+                <div>
+                    <h1 class="font-pixel text-xs sm:text-sm md:text-base text-yellow-300 drop-shadow">MARIO MATH</h1>
+                    <p class="text-xs font-bold text-white leading-tight">ร้อยละและเปอร์เซ็นต์ ป.5</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <!-- Audio Toggle -->
+                <button id="soundToggle" onclick="toggleSound()" class="mario-btn bg-yellow-400 text-black px-3 py-1 text-xs font-bold rounded flex items-center space-x-1">
+                    <span id="soundIcon">🔊</span>
+                    <span class="hidden sm:inline">เสียง</span>
+                </button>
+                <!-- Download HTML Button -->
+                <button onclick="downloadHTML()" class="mario-btn bg-green-500 hover:bg-green-400 text-white px-3 py-1 text-xs font-bold rounded flex items-center space-x-1">
+                    <span>📥</span>
+                    <span class="hidden sm:inline">ดาวน์โหลดไฟล์</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTAINER -->
+        <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 flex flex-col justify-between">
+            
+            <!-- STAGE NAV TABS -->
+            <div class="grid grid-cols-4 gap-1 sm:gap-2 mb-4">
+                <button onclick="switchStage(1)" id="tab-1" class="stage-tab mario-btn bg-yellow-400 text-black text-xs sm:text-sm font-bold py-2 rounded text-center">
+                    ด่าน 1<br><span class="text-[10px] sm:text-xs font-normal hidden sm:inline">ตาราง 100 ช่อง</span>
+                </button>
+                <button onclick="switchStage(2)" id="tab-2" class="stage-tab mario-btn bg-gray-300 text-black text-xs sm:text-sm font-bold py-2 rounded text-center">
+                    ด่าน 2<br><span class="text-[10px] sm:text-xs font-normal hidden sm:inline">แปลงเศษส่วน</span>
+                </button>
+                <button onclick="switchStage(3)" id="tab-3" class="stage-tab mario-btn bg-gray-300 text-black text-xs sm:text-sm font-bold py-2 rounded text-center">
+                    ด่าน 3<br><span class="text-[10px] sm:text-xs font-normal hidden sm:inline">ร้อยละจำนวนนับ</span>
+                </button>
+                <button onclick="switchStage(4)" id="tab-4" class="stage-tab mario-btn bg-gray-300 text-black text-xs sm:text-sm font-bold py-2 rounded text-center">
+                    ทดสอบ<br><span class="text-[10px] sm:text-xs font-normal hidden sm:inline">แบบประเมิน</span>
+                </button>
+            </div>
+
+            <!-- STAGE CONTENT DISPLAY AREA -->
+            <div class="flex-1 flex flex-col justify-center">
+
+                <!-- STAGE 1: ตาราง 100 ช่อง -->
+                <section id="stage-1" class="stage-content mario-card p-4 sm:p-6 flex flex-col items-center">
+                    <div class="w-full text-center mb-3">
+                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">ด่านที่ 1: สังเกตตาราง 100 ช่อง</span>
+                        <h2 class="text-base sm:text-xl font-bold mt-1">สัมผัสหรือลากเพื่อระบายสีตามที่กำหนด</h2>
+                        <p class="text-xs sm:text-sm text-gray-600">เป้าหมาย: ระบายสีตารางให้ได้ <span id="stg1-target" class="font-bold text-red-600 text-base">35</span> ช่อง</p>
+                    </div>
+
+                    <!-- 100 Grid Container -->
+                    <div class="relative w-full max-w-[280px] sm:max-w-[340px] bg-white p-2 border-4 border-black rounded-lg shadow-md">
+                        <div id="grid-100" class="grid grid-cols-10 gap-0.5 select-none touch-none">
+                            <!-- 100 cells dynamically generated -->
+                        </div>
+                    </div>
+
+                    <!-- Info & Math Readout -->
+                    <div class="w-full grid grid-cols-3 gap-2 mt-4 text-center">
+                        <div class="mario-box p-2 rounded">
+                            <div class="text-[10px] text-gray-700 font-bold">ส่วนที่ระบาย</div>
+                            <div id="stg1-count" class="text-lg font-bold text-red-600">0 / 100</div>
+                        </div>
+                        <div class="mario-box p-2 rounded">
+                            <div class="text-[10px] text-gray-700 font-bold">คิดเป็นเศษส่วน</div>
+                            <div id="stg1-fraction" class="text-lg font-bold text-blue-600">0/100</div>
+                        </div>
+                        <div class="mario-box p-2 rounded">
+                            <div class="text-[10px] text-gray-700 font-bold">ร้อยละ / %</div>
+                            <div id="stg1-percent" class="text-lg font-bold text-green-600">0%</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex space-x-3">
+                        <button onclick="resetStage1()" class="mario-btn bg-gray-400 text-black px-4 py-2 rounded text-xs font-bold">ล้างตาราง</button>
+                        <button onclick="checkStage1()" class="mario-btn bg-green-500 text-white px-6 py-2 rounded text-xs font-bold">ส่งคำตอบ ⭐️</button>
+                    </div>
+                </section>
+
+                <!-- STAGE 2: วิเคราะห์เศษส่วนเป็นร้อยละ (Mario Block Game) -->
+                <section id="stage-2" class="stage-content mario-card p-4 sm:p-6 hidden flex-col items-center">
+                    <div class="w-full text-center mb-2">
+                        <span class="bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase">ด่านที่ 2: บล็อกแปลงเศษส่วน</span>
+                        <h2 class="text-base sm:text-lg font-bold mt-1">กระโดดชนบล็อกคำตอบที่ถูกต้อง!</h2>
+                    </div>
+
+                    <!-- Question Banner -->
+                    <div class="mario-box w-full p-3 text-center my-2 bg-yellow-100">
+                        <p class="text-xs text-gray-600 font-bold">แปลงเศษส่วนต่อไปนี้เป็น "ร้อยละ" หรือ "เปอร์เซ็นต์":</p>
+                        <div id="stg2-question" class="text-2xl sm:text-3xl font-extrabold text-red-600 my-1">12 / 20</div>
+                        <p class="text-xs text-gray-500">(คำแนะนำ: ทำส่วนให้เป็น 100 โดยคูณด้วยตัวเลขที่เหมาะสม)</p>
+                    </div>
+
+                    <!-- Interactive Blocks Grid -->
+                    <div id="stg2-blocks" class="grid grid-cols-2 gap-3 sm:gap-4 w-full max-w-md my-4">
+                        <!-- Dynamic Block Buttons -->
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-yellow-500 text-xl coin-icon">🪙</span>
+                            <span id="stg2-score" class="font-pixel text-sm">00</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STAGE 3: ร้อยละของจำนวนนับ (Coin Collector) -->
+                <section id="stage-3" class="stage-content mario-card p-4 sm:p-6 hidden flex-col items-center">
+                    <div class="w-full text-center mb-2">
+                        <span class="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">ด่านที่ 3: ร้อยละของจำนวนนับ</span>
+                        <h2 class="text-base sm:text-lg font-bold mt-1">คำนวณหาราคาหรือจำนวนเพื่อเก็บเหรียญ</h2>
+                    </div>
+
+                    <div class="mario-box w-full p-4 my-2 bg-blue-50 border-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-4xl animate-float">🎁</div>
+                            <div>
+                                <h3 id="stg3-title" class="font-bold text-sm sm:text-base text-blue-900">โจทย์ปัญหาไอเทม</h3>
+                                <p id="stg3-problem" class="text-xs sm:text-sm text-gray-800 mt-1">กระเป๋าเป้ราคา 500 บาท ลดราคา 20% จะลดราคากี่บาท?</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Answer Pad / Choices -->
+                    <div id="stg3-choices" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md my-3">
+                        <!-- Dynamic Choices -->
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full max-w-md bg-gray-200 h-4 rounded-full border-2 border-black overflow-hidden mt-2">
+                        <div id="stg3-progress" class="bg-green-500 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </section>
+
+                <!-- STAGE 4: แบบทดสอบประเมินผล (Quiz) -->
+                <section id="stage-4" class="stage-content mario-card p-4 sm:p-6 hidden flex-col items-center">
+                    <div class="w-full text-center mb-3">
+                        <span class="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">แบบทดสอบประเมินผล</span>
+                        <h2 class="text-base sm:text-lg font-bold mt-1">ทดสอบความรู้เรื่องร้อยละ (3 ข้อ)</h2>
+                    </div>
+
+                    <div id="quiz-container" class="w-full max-w-md">
+                        <!-- Quiz Dynamic Content -->
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- CONTROLS / TOUCH FEEDBACK BAR FOR MOBILE & TABLET -->
+            <div id="touch-controls" class="mt-4 p-2 bg-yellow-300 border-2 border-black rounded-lg flex justify-between items-center text-xs font-bold">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">🎮</span>
+                    <span>สัมผัสหน้าจอเพื่อเลือกคำตอบ หรือลากระบายสี</span>
+                </div>
+                <div id="feedback-msg" class="text-red-700 font-extrabold animate-pulse">พร้อมลุย!</div>
+            </div>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="bg-black text-white text-center py-2 text-[10px] sm:text-xs">
+            สื่อการเรียนรู้วิชาคณิตศาสตร์ ชั้นประถมศึกษาปีที่ 5 • Mario Pixel Math Theme
+        </footer>
+    </div>
+
+    <!-- AUDIO SYNTH (Web Audio API - No External Files) -->
+    <script>
+        // Web Audio API Sound Generator for 8-bit Mario Sounds
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Unlock Audio on First User Interaction (Required for iOS Safari & Android)
+        document.addEventListener('touchstart', initAudio, { once: true });
+        document.addEventListener('click', initAudio, { once: true });
+
+        function play8BitSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'coin') {
+                // Mario Coin Sound
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(987.77, now); // B5
+                osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'jump') {
+                // Jump Sound
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'correct') {
+                // Victory Fanfare
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'wrong') {
+                // Wrong Sound
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.setValueAtTime(150, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundIcon').innerText = soundEnabled ? '🔊' : '🔇';
+        }
+
+        function showFeedback(text, isSuccess = true) {
+            const el = document.getElementById('feedback-msg');
+            el.innerText = text;
+            el.className = isSuccess 
+                ? 'text-green-700 font-extrabold animate-bounce' 
+                : 'text-red-700 font-extrabold animate-shake';
+        }
+    </script>
+
+    <!-- GAME LOGIC ENGINE -->
+    <script>
+        // Global State Variables
+        let currentStage = 1;
+        let isDragging = false;
+        let selectedCellsCount = 0;
+        let stage1Target = 35;
+
+        // Stage 2 Questions Data
+        const stage2Questions = [
+            { frac: '7 / 10', ans: 'ร้อยละ 70', options: ['ร้อยละ 7', 'ร้อยละ 70', 'ร้อยละ 17', 'ร้อยละ 700'] },
+            { frac: '9 / 20', ans: '45%', options: ['9%', '20%', '45%', '90%'] },
+            { frac: '14 / 25', ans: '56%', options: ['14%', '28%', '56%', '70%'] },
+            { frac: '31 / 50', ans: 'ร้อยละ 62', options: ['ร้อยละ 31', 'ร้อยละ 50', 'ร้อยละ 62', 'ร้อยละ 80'] }
+        ];
+        let stage2Index = 0;
+        let stage2Score = 0;
+
+        // Stage 3 Questions Data
+        const stage3Questions = [
+            { title: '🎁 เสื้อกันหนาว Mario', problem: 'เสื้อราคา 800 บาท ติดป้ายลดราคา 15% จะได้ส่วนลดกี่บาท?', options: ['100 บาท', '120 บาท', '150 บาท', '200 บาท'], correct: 1, hint: 'คิดจาก (15 / 100) × 800 = 120 บาท' },
+            { title: '🪙 เหรียญทองคำ', problem: 'มีเหรียญทองทั้งหมด 200 เหรียญ เป็นเหรียญดาว 40% มีเหรียญดาวกี่เหรียญ?', options: ['40 เหรียญ', '60 เหรียญ', '80 เหรียญ', '100 เหรียญ'], correct: 2, hint: 'คิดจาก (40 / 100) × 200 = 80 เหรียญ' },
+            { title: '🍄 เห็ดเพิ่มพลัง', problem: 'กล่องไอเทม 50 กล่อง เป็นเห็ดแดง 60% มีเห็ดแดงกี่กล่อง?', options: ['20 กล่อง', '25 กล่อง', '30 กล่อง', '35 กล่อง'], correct: 2, hint: 'คิดจาก (60 / 100) × 50 = 30 กล่อง' }
+        ];
+        let stage3Index = 0;
+
+        // Stage 4 Assessment Quiz Data
+        const quizData = [
+            {
+                q: '1. ข้อใดมีความหมายเท่ากับ "ร้อยละ 48"?',
+                choices: ['48 / 10', '48 / 100', '100 / 48', '4.8 / 100'],
+                ans: 1,
+                explain: 'ร้อยละ 48 คือการเทียบส่วน 48 ใน 100 หรือเขียนในรูปเศษส่วนได้เป็น 48/100'
+            },
+            {
+                q: '2. แปลง 18/25 ให้อยู่ในรูปร้อยละได้เท่าใด?',
+                choices: ['ร้อยละ 18', 'ร้อยละ 36', 'ร้อยละ 54', 'ร้อยละ 72'],
+                ans: 3,
+                explain: 'ทำตัวส่วน 25 ให้เป็น 100 โดยคูณ 4 ทั้งเศษและส่วน: (18×4)/(25×4) = 72/100 คิดเป็นร้อยละ 72'
+            },
+            {
+                q: '3. นักเรียน 40 คน สอบผ่านวิชาคณิตศาสตร์ 85% มีนักเรียนสอบผ่านกี่คน?',
+                choices: ['34 คน', '35 คน', '36 คน', '38 คน'],
+                ans: 0,
+                explain: 'คิดจาก (85 / 100) × 40 = 3,400 / 100 = 34 คน'
+            }
+        ];
+        let quizAnswers = [null, null, null];
+        let quizSubmitted = false;
+
+        // INITIALIZATION
+        window.onload = function() {
+            initStage1Grid();
+            loadStage2Question();
+            loadStage3Question();
+            renderQuiz();
+        };
+
+        // NAVIGATION CONTROL
+        function switchStage(stageNum) {
+            play8BitSound('jump');
+            currentStage = stageNum;
+
+            // Highlight Tabs
+            for (let i = 1; i <= 4; i++) {
+                const tab = document.getElementById(`tab-${i}`);
+                if (i === stageNum) {
+                    tab.classList.remove('bg-gray-300');
+                    tab.classList.add('bg-yellow-400');
+                } else {
+                    tab.classList.remove('bg-yellow-400');
+                    tab.classList.add('bg-gray-300');
+                }
+            }
+
+            // Show Content Area
+            document.querySelectorAll('.stage-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`stage-${stageNum}`).classList.remove('hidden');
+            document.getElementById(`stage-${stageNum}`).classList.add('flex');
+
+            showFeedback(`ยินดีต้อนรับสู่ด่านที่ ${stageNum}!`);
+        }
+
+        /* ---------------- STAGE 1: GRID 100 LOGIC ---------------- */
+        function initStage1Grid() {
+            const grid = document.getElementById('grid-100');
+            grid.innerHTML = '';
+            selectedCellsCount = 0;
+
+            // Randomize Target for replayability
+            stage1Target = [25, 35, 48, 60, 75][Math.floor(Math.random() * 5)];
+            document.getElementById('stg1-target').innerText = stage1Target;
+
+            for (let i = 0; i < 100; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell rounded-sm bg-gray-100 cursor-pointer';
+                cell.dataset.index = i;
+
+                // Touch & Drag Support
+                cell.addEventListener('mousedown', (e) => startDrag(cell));
+                cell.addEventListener('mouseenter', (e) => { if (isDragging) toggleCell(cell, true); });
+                cell.addEventListener('touchstart', (e) => { e.preventDefault(); toggleCell(cell); });
+
+                grid.appendChild(cell);
+            }
+
+            document.addEventListener('mouseup', () => isDragging = false);
+            updateStage1Readout();
+        }
+
+        function startDrag(cell) {
+            isDragging = true;
+            toggleCell(cell);
+        }
+
+        function toggleCell(cell, forceSelect = false) {
+            if (forceSelect) {
+                if (!cell.classList.contains('selected')) {
+                    cell.classList.add('selected');
+                    selectedCellsCount++;
+                    play8BitSound('coin');
+                }
+            } else {
+                cell.classList.toggle('selected');
+                selectedCellsCount += cell.classList.contains('selected') ? 1 : -1;
+                play8BitSound('coin');
+            }
+            updateStage1Readout();
+        }
+
+        function updateStage1Readout() {
+            document.getElementById('stg1-count').innerText = `${selectedCellsCount} / 100`;
+            document.getElementById('stg1-fraction').innerText = `${selectedCellsCount}/100`;
+            document.getElementById('stg1-percent').innerText = `${selectedCellsCount}%`;
+        }
+
+        function resetStage1() {
+            play8BitSound('jump');
+            document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('selected'));
+            selectedCellsCount = 0;
+            updateStage1Readout();
+        }
+
+        function checkStage1() {
+            if (selectedCellsCount === stage1Target) {
+                play8BitSound('correct');
+                showFeedback(`ถูกต้องแล้ว! ${selectedCellsCount} ช่อง เท่ากับ ร้อยละ ${selectedCellsCount}`, true);
+            } else {
+                play8BitSound('wrong');
+                showFeedback(`ยังไม่ถูกต้องนะ! เป้าหมายคือ ${stage1Target} ช่อง (ระบายไปแล้ว ${selectedCellsCount})`, false);
+            }
+        }
+
+        /* ---------------- STAGE 2: FRACTION CONVERSION LOGIC ---------------- */
+        function loadStage2Question() {
+            const q = stage2Questions[stage2Index];
+            document.getElementById('stg2-question').innerText = q.frac;
+            
+            const blocksContainer = document.getElementById('stg2-blocks');
+            blocksContainer.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'mario-btn bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold text-base sm:text-lg py-4 rounded-xl flex items-center justify-center space-x-2 shadow-lg';
+                btn.innerHTML = `<span>❓</span> <span>${opt}</span>`;
+                btn.onclick = () => answerStage2(opt, q.ans);
+                blocksContainer.appendChild(btn);
+            });
+        }
+
+        function answerStage2(selected, correct) {
+            if (selected === correct) {
+                play8BitSound('correct');
+                stage2Score += 10;
+                document.getElementById('stg2-score').innerText = stage2Score < 10 ? `0${stage2Score}` : stage2Score;
+                showFeedback('เก่งมาก! คำตอบถูกต้อง +10 เหรียญ', true);
+
+                stage2Index = (stage2Index + 1) % stage2Questions.length;
+                setTimeout(loadStage2Question, 1000);
+            } else {
+                play8BitSound('wrong');
+                showFeedback('ลองใหม่อีกครั้งนะ! คูณเศษและส่วนด้วยตัวเลขที่ทำให้ส่วนเป็น 100', false);
+            }
+        }
+
+        /* ---------------- STAGE 3: PERCENTAGE OF WHOLE NUMBERS ---------------- */
+        function loadStage3Question() {
+            const q = stage3Questions[stage3Index];
+            document.getElementById('stg3-title').innerText = q.title;
+            document.getElementById('stg3-problem').innerText = q.problem;
+
+            const choicesContainer = document.getElementById('stg3-choices');
+            choicesContainer.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'mario-btn bg-white hover:bg-green-100 text-black font-bold text-sm sm:text-base py-3 px-4 rounded-lg text-left border-2 flex items-center justify-between';
+                btn.innerHTML = `<span>${idx + 1}. ${opt}</span> <span class="text-xl">🪙</span>`;
+                btn.onclick = () => answerStage3(idx, q.correct, q.hint);
+                choicesContainer.appendChild(btn);
+            });
+
+            // Update Progress Bar
+            const progPct = ((stage3Index) / stage3Questions.length) * 100;
+            document.getElementById('stg3-progress').style.width = `${progPct}%`;
+        }
+
+        function answerStage3(selectedIdx, correctIdx, hint) {
+            if (selectedIdx === correctIdx) {
+                play8BitSound('correct');
+                showFeedback('ถูกต้อง! เก่งมากเหรียญเป็นของคุณแล้ว', true);
+
+                if (stage3Index < stage3Questions.length - 1) {
+                    stage3Index++;
+                    setTimeout(loadStage3Question, 1200);
+                } else {
+                    document.getElementById('stg3-progress').style.width = '100%';
+                    showFeedback('🎉 ยินดีด้วย! คุณผ่านด่านการคำนวณร้อยละทั้งหมดแล้ว!', true);
+                }
+            } else {
+                play8BitSound('wrong');
+                showFeedback(`ยังไม่อยู่ในคำตอบที่ถูก! ${hint}`, false);
+            }
+        }
+
+        /* ---------------- STAGE 4: QUIZ EVALUATION ---------------- */
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+
+            quizData.forEach((q, qIdx) => {
+                const card = document.createElement('div');
+                card.className = 'mario-box p-4 mb-4 rounded-lg bg-white';
+
+                let choicesHtml = '';
+                q.choices.forEach((c, cIdx) => {
+                    const isSelected = quizAnswers[qIdx] === cIdx;
+                    let btnStyle = 'bg-gray-100 text-black';
+                    
+                    if (quizSubmitted) {
+                        if (cIdx === q.ans) btnStyle = 'bg-green-500 text-white font-bold';
+                        else if (isSelected && cIdx !== q.ans) btnStyle = 'bg-red-500 text-white font-bold';
+                    } else if (isSelected) {
+                        btnStyle = 'bg-blue-500 text-white font-bold';
+                    }
+
+                    choicesHtml += `
+                        <button onclick="selectQuizAnswer(${qIdx}, ${cIdx})" 
+                                ${quizSubmitted ? 'disabled' : ''}
+                                class="w-full text-left p-2 my-1 text-xs sm:text-sm rounded border ${btnStyle} transition-colors">
+                            ${String.fromCharCode(65 + cIdx)}. ${c}
+                        </button>
+                    `;
+                });
+
+                let explainHtml = '';
+                if (quizSubmitted) {
+                    explainHtml = `
+                        <div class="mt-2 p-2 bg-yellow-100 border-l-4 border-yellow-500 text-xs text-gray-800">
+                            <strong>💡 เฉลยรายละเอียด:</strong> ${q.explain}
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <p class="font-bold text-xs sm:text-sm mb-2">${q.q}</p>
+                    <div class="space-y-1">${choicesHtml}</div>
+                    ${explainHtml}
+                `;
+                container.appendChild(card);
+            });
+
+            // Action Buttons
+            const btnBox = document.createElement('div');
+            btnBox.className = 'flex justify-center space-x-3 mt-4';
+            if (!quizSubmitted) {
+                btnBox.innerHTML = `<button onclick="submitQuiz()" class="mario-btn bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-2 rounded text-sm">ส่งแบบทดสอบ 📝</button>`;
+            } else {
+                btnBox.innerHTML = `<button onclick="resetQuiz()" class="mario-btn bg-gray-500 hover:bg-gray-400 text-white font-bold px-6 py-2 rounded text-sm">ทำแบบทดสอบอีกครั้ง 🔄</button>`;
+            }
+            container.appendChild(btnBox);
+        }
+
+        function selectQuizAnswer(qIdx, cIdx) {
+            play8BitSound('jump');
+            quizAnswers[qIdx] = cIdx;
+            renderQuiz();
+        }
+
+        function submitQuiz() {
+            if (quizAnswers.includes(null)) {
+                showFeedback('กรุณาตอบคำถามให้ครบทุกข้อก่อนส่งแบบทดสอบ', false);
+                return;
+            }
+
+            quizSubmitted = true;
+            let score = 0;
+            quizAnswers.forEach((ans, idx) => {
+                if (ans === quizData[idx].ans) score++;
+            });
+
+            if (score === 3) play8BitSound('correct');
+            else play8BitSound('wrong');
+
+            showFeedback(`คุณได้คะแนน ${score} / 3 คะแนน!`, score > 1);
+            renderQuiz();
+        }
+
+        function resetQuiz() {
+            quizAnswers = [null, null, null];
+            quizSubmitted = false;
+            renderQuiz();
+            showFeedback('เริ่มทำแบบทดสอบใหม่ได้เลย!');
+        }
+
+        /* ---------------- DOWNLOAD FILE UTILITY ---------------- */
+        function downloadHTML() {
+            const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'index.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
